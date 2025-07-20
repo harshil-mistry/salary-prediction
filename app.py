@@ -1,10 +1,13 @@
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 import os
 from typing import Optional, List
 from sklearn.preprocessing import MinMaxScaler
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 MODEL_ASSETS_DIR = "model_assets"
 MODEL_PATH = os.path.join(MODEL_ASSETS_DIR, 'random_forest_model.joblib')
@@ -16,19 +19,21 @@ loaded_encoders = None
 loaded_scaler = None 
 
 EXPECTED_FEATURE_ORDER = [
-    'Education_encoded',
+    'Education',
     'Experience',
-    'Location_encoded',
-    'Job_Title_encoded',
+    'Location',
+    'Job_Title',
     'Age',
-    'Gender_encoded'
+    'Gender'
 ]
 
 app = FastAPI(
     title="Employee Salary Prediction API",
-    description="Predicts employee salaries using a pre-trained Random Forest Regressor model.",
+    description="Predicts employee salaries using a custom-trained Random Forest Regressor model.",
     version="1.0.0"
 )
+
+templates = Jinja2Templates(directory="templates")
 
 class EmployeeFeatures(BaseModel):
     Education: str
@@ -82,10 +87,10 @@ async def predict_salary(employee_data: EmployeeFeatures):
 
         try:
             encoded_value = encoder.transform([raw_value])[0]
-            processed_features[f'{feature_name}_encoded'] = encoded_value
+            processed_features[f'{feature_name}'] = encoded_value
         except ValueError:
             print(f"Warning: Unseen category '{raw_value}' for '{feature_name}'. Assigning -1.")
-            processed_features[f'{feature_name}_encoded'] = -1
+            processed_features[f'{feature_name}'] = -1
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error encoding {feature_name}: {e}")
 
@@ -115,7 +120,7 @@ async def predict_salary(employee_data: EmployeeFeatures):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to the Employee Salary Prediction API! Use /predict_salary to get predictions."}
-
+@app.get("/", response_class=HTMLResponse)
+async def serve_prediction_form(request: Request):
+    # Render the index.html template
+    return templates.TemplateResponse("index.html", {"request": request})
