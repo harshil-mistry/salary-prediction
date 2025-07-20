@@ -9,24 +9,25 @@ from sklearn.preprocessing import MinMaxScaler
 MODEL_ASSETS_DIR = "model_assets"
 MODEL_PATH = os.path.join(MODEL_ASSETS_DIR, 'random_forest_model.joblib')
 ENCODERS_PATH = os.path.join(MODEL_ASSETS_DIR, 'label_encoders_dict.joblib')
-SCALER_PATH = os.path.join(MODEL_ASSETS_DIR, 'minmax_scaler.joblib') 
+SCALER_PATH = os.path.join(MODEL_ASSETS_DIR, 'minmax_scaler.joblib') # Path for the scaler
 
 loaded_model = None
 loaded_encoders = None
 loaded_scaler = None 
 
 EXPECTED_FEATURE_ORDER = [
-    'Experience',
-    'Age',
     'Education_encoded',
+    'Experience',
     'Location_encoded',
     'Job_Title_encoded',
+    'Age',
     'Gender_encoded'
 ]
 
 app = FastAPI(
     title="Employee Salary Prediction API",
-    description="Predicts employee salaries using a pre-trained Random Forest Regressor model."
+    description="Predicts employee salaries using a pre-trained Random Forest Regressor model.",
+    version="1.0.0"
 )
 
 class EmployeeFeatures(BaseModel):
@@ -39,7 +40,7 @@ class EmployeeFeatures(BaseModel):
 
 @app.on_event("startup")
 async def load_assets_on_startup():
-
+    
     global loaded_model, loaded_encoders, loaded_scaler
 
     print(f"Attempting to load model from: {MODEL_PATH}")
@@ -49,7 +50,7 @@ async def load_assets_on_startup():
     try:
         loaded_model = joblib.load(MODEL_PATH)
         loaded_encoders = joblib.load(ENCODERS_PATH)
-        loaded_scaler = joblib.load(SCALER_PATH) 
+        loaded_scaler = joblib.load(SCALER_PATH)
 
         print("Model, Encoders, and Scaler loaded successfully!")
     except FileNotFoundError as e:
@@ -62,18 +63,23 @@ async def load_assets_on_startup():
 
 @app.post("/predict_salary")
 async def predict_salary(employee_data: EmployeeFeatures):
-
+    
     if loaded_model is None or loaded_encoders is None or loaded_scaler is None:
         raise HTTPException(status_code=500, detail="Model assets not loaded. Please check server logs.")
 
     input_data = employee_data.dict()
     processed_features = {}
 
-    # 1. Process Categorical Features using Label Encoders
-    for feature_name, encoder in loaded_encoders.items():
+    categorical_features_raw_names = ['Education', 'Location', 'Job_Title', 'Gender']
+    for feature_name in categorical_features_raw_names:
         raw_value = input_data.get(feature_name)
         if raw_value is None:
             raise HTTPException(status_code=400, detail=f"Missing categorical feature: {feature_name}")
+        
+        encoder = loaded_encoders.get(feature_name)
+        if encoder is None:
+            raise HTTPException(status_code=500, detail=f"Encoder for '{feature_name}' not found. Check 'label_encoders_dict.joblib'.")
+
         try:
             encoded_value = encoder.transform([raw_value])[0]
             processed_features[f'{feature_name}_encoded'] = encoded_value
@@ -83,40 +89,32 @@ async def predict_salary(employee_data: EmployeeFeatures):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error encoding {feature_name}: {e}")
 
-    # 2. Add Numerical Features directly
-    numerical_features_raw_names = ['Experience', 'Age'] # Original names for numerical features
+    numerical_features_raw_names = ['Experience', 'Age']
     for num_feature in numerical_features_raw_names:
         value = input_data.get(num_feature)
         if value is None:
             raise HTTPException(status_code=400, detail=f"Missing numerical feature: {num_feature}")
         processed_features[num_feature] = value
 
-    # 3. Create a Pandas DataFrame for prediction, ensuring correct column order
     try:
         input_df = pd.DataFrame([processed_features])
-        # Reorder columns to match the training data's EXPECTED_FEATURE_ORDER
-        # This is crucial for the scaler and the model
         input_df = input_df[EXPECTED_FEATURE_ORDER]
     except KeyError as e:
         raise HTTPException(status_code=500, detail=f"Internal error: Feature mismatch. Missing expected column: {e}. Check EXPECTED_FEATURE_ORDER.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error preparing input data for prediction: {e}")
 
-    # 4. Apply Scaling using the loaded MinMaxScaler
     try:
-        # The scaler expects a 2D array, so input_df is correct
         input_df_scaled = loaded_scaler.transform(input_df)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error applying scaler: {e}")
 
-    # 5. Make the prediction
     try:
         prediction = loaded_model.predict(input_df_scaled)[0]
         return {"predicted_salary_inr": float(prediction)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
-# --- Root Endpoint (Optional) ---
 @app.get("/")
 async def read_root():
     return {"message": "Welcome to the Employee Salary Prediction API! Use /predict_salary to get predictions."}
