@@ -152,8 +152,8 @@
                         <label for="education" class="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
                         <select id="education" name="Education" class="mt-1 block w-full">
                             <option value="High School">High School</option>
-                            <option value="Bachelors">Bachelors</option>
-                            <option value="Masters">Masters</option>
+                            <option value="Bachelor">Bachelors</option>
+                            <option value="Master">Masters</option>
                             <option value="PhD">PhD</option>
                         </select>
                     </div>
@@ -174,7 +174,12 @@
 
                     <div class="input-group">
                         <label for="job_title" class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                        <input type="text" id="job_title" name="Job_Title" required value="Software Engineer" class="mt-1 block w-full">
+                        <select id="job_title" name="Job_Title" class="mt-1 block w-full">
+                            <option value="Director">Director</option>
+                            <option value="Analyst">Analyst</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Engineer">Engineer</option>
+                        </select>
                     </div>
 
                     <div class="input-group">
@@ -187,7 +192,6 @@
                         <select id="gender" name="Gender" class="mt-1 block w-full">
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
-                            <option value="Other">Other</option>
                         </select>
                     </div>
 
