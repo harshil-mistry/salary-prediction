@@ -5,95 +5,255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Salary Predictor</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* More vibrant gradient */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
         }
-        input, select {
-            border-radius: 0.5rem;
-            padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
+        input, select, button {
+            border-radius: 0.75rem; /* More rounded corners */
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.98); /* Less transparent white */
+            backdrop-filter: blur(15px); /* Stronger frosted glass effect */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+            border-radius: 1.5rem; /* Even more rounded */
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle white border */
+        }
+        .input-group label {
+            font-weight: 600; /* Slightly bolder labels */
+            color: #374151; /* Darker gray for labels */
+            margin-bottom: 0.5rem;
+        }
+        .input-group input, .input-group select {
+            border: 1px solid #e5e7eb; /* Lighter border */
+            padding: 0.85rem 1.25rem; /* Slightly larger padding */
             width: 100%;
-            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: #f9fafb; /* Light background for inputs */
         }
-        button {
-            border-radius: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background-color: #4f46e5;
+        .input-group input:focus, .input-group select:focus {
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3); /* More prominent focus ring */
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #6366f1, #8b5cf6); /* Gradient button */
             color: white;
-            font-weight: 600;
-            transition: background-color 0.2s;
+            font-weight: 700; /* Bolder text */
+            padding: 0.9rem 2rem; /* Larger padding */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+            letter-spacing: 0.05em; /* Slight letter spacing */
         }
-        button:hover {
-            background-color: #4338ca;
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #8b5cf6, #6366f1); /* Reverse gradient on hover */
+            transform: translateY(-3px) scale(1.02); /* More pronounced hover effect */
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6);
+        }
+        .section-heading {
+            font-size: 2.75rem; /* Larger heading */
+            font-weight: 800; /* Extra bold */
+            color: #1f2937;
+            margin-bottom: 2.5rem; /* More space below heading */
+            text-align: center;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        .section-heading::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, #6366f1, #ec4899);
+            border-radius: 2px;
+        }
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #6366f1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-display {
+            background: linear-gradient(45deg, #e0f2fe, #e9d5ff); /* Light gradient for result */
+            color: #312e81; /* Darker text for result */
+            font-weight: 700;
+            border: 1px solid #a78bfa;
+            transform-origin: center; /* For scale animation */
+        }
+        .error-display {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-    <div class="container bg-white p-8 rounded-lg shadow-xl">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Employee Salary Predictor</h1>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-        <form id="predictionForm" class="space-y-6">
-            <div>
-                <label for="education" class="block text-sm font-medium text-gray-700 mb-1">Education</label>
-                <select id="education" name="Education" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="High School">High School</option>
-                    <option value="Bachelors">Bachelors</option>
-                    <option value="Masters">Masters</option>
-                    <option value="PhD">PhD</option>
-                </select>
+    <!-- Header -->
+    <header class="w-full py-4 px-8 bg-white bg-opacity-90 backdrop-blur-xl shadow-lg fixed top-0 z-10">
+        <nav class="container mx-auto flex justify-between items-center">
+            <a href="#" class="text-3xl font-extrabold text-indigo-700 tracking-wide">Salary AI</a>
+            <ul class="flex space-x-8">
+                <li><a href="#predictor" class="text-gray-700 hover:text-indigo-600 font-semibold transition duration-200 text-lg">Predictor</a></li>
+                <li><a href="#about" class="text-gray-700 hover:text-indigo-600 font-semibold transition duration-200 text-lg">About</a></li>
+                <li><a href="#how-it-works" class="text-gray-700 hover:text-indigo-600 font-semibold transition duration-200 text-lg">How It Works</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-center w-full pt-28 pb-16">
+        <!-- Hero Section -->
+        <section class="text-center text-white py-20 px-4 mb-16">
+            <h1 class="text-6xl md:text-7xl font-extrabold leading-tight mb-6 drop-shadow-2xl">
+                Unlock Your Earning Potential
+            </h1>
+            <p class="text-xl md:text-2xl font-light mb-10 max-w-3xl mx-auto opacity-95">
+                Predict employee salaries with precision using our advanced AI model.
+                Gain insights into market value and make informed career decisions.
+            </p>
+            <a href="#predictor" class="btn-primary inline-block px-10 py-4 text-xl rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300 ease-in-out">
+                Get Started Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </section>
+
+        <!-- Prediction Form Section -->
+        <section id="predictor" class="w-full px-4 mb-16">
+            <div class="container mx-auto card">
+                <h2 class="section-heading text-indigo-700">Salary Prediction Form</h2>
+
+                <form id="predictionForm" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="input-group">
+                        <label for="education" class="block text-sm font-medium text-gray-700 mb-1">Education Level</label>
+                        <select id="education" name="Education" class="mt-1 block w-full">
+                            <option value="High School">High School</option>
+                            <option value="Bachelors">Bachelors</option>
+                            <option value="Masters">Masters</option>
+                            <option value="PhD">PhD</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="experience" class="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                        <input type="number" id="experience" name="Experience" required min="0" value="5" class="mt-1 block w-full">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location Type</label>
+                        <select id="location" name="Location" class="mt-1 block w-full">
+                            <option value="Urban">Urban</option>
+                            <option value="Rural">Rural</option>
+                            <option value="Suburban">Suburban</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="job_title" class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                        <input type="text" id="job_title" name="Job_Title" required value="Software Engineer" class="mt-1 block w-full">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                        <input type="number" id="age" name="Age" required min="18" value="30" class="mt-1 block w-full">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                        <select id="gender" name="Gender" class="mt-1 block w-full">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn-primary w-full flex justify-center items-center py-3">
+                            <span id="buttonText">Predict Salary</span>
+                            <span id="loadingSpinner" class="spinner ml-2 hidden"></span>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="predictionResult" class="mt-10 p-5 result-display rounded-lg text-center text-2xl font-bold hidden transform scale-0 transition-transform duration-300 ease-out">
+                    <!-- Prediction result will be displayed here -->
+                </div>
+
+                <div id="errorMessage" class="mt-6 p-4 error-display rounded-lg text-center hidden">
+                    <!-- Error messages will be displayed here -->
+                </div>
             </div>
+        </section>
 
-            <div>
-                <label for="experience" class="block text-sm font-medium text-gray-700 mb-1">Experience (Years)</label>
-                <input type="number" id="experience" name="Experience" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value="5">
+        <!-- About Section -->
+        <section id="about" class="w-full px-4 py-16">
+            <div class="container mx-auto card">
+                <h2 class="section-heading text-purple-700">About This Predictor</h2>
+                <p class="text-gray-700 leading-relaxed text-center text-lg">
+                    Our Employee Salary Predictor leverages a sophisticated Machine Learning model (Random Forest Regressor)
+                    trained on a diverse dataset of employee attributes and their corresponding salaries.
+                    This tool aims to provide an estimated salary range based on various factors like
+                    education, experience, location, job title, age, and gender.
+                    It's designed to help individuals understand their potential market value and assist
+                    businesses in fair compensation practices. We are committed to providing data-driven insights
+                    to empower your career and organizational growth.
+                </p>
             </div>
+        </section>
 
-            <div>
-                <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <select id="location" name="Location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="Urban">Urban</option>
-                    <option value="Rural">Rural</option>
-                    <option value="Suburban">Suburban</option>
-                </select>
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="w-full px-4 py-16">
+            <div class="container mx-auto card">
+                <h2 class="section-heading text-pink-700">How It Works</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="p-6 rounded-lg bg-gray-50 shadow-md flex flex-col items-center">
+                        <i class="fas fa-keyboard text-5xl text-indigo-500 mb-4"></i>
+                        <h3 class="font-bold text-xl mb-2 text-gray-800">1. Input Your Details</h3>
+                        <p class="text-gray-600 text-base">Provide key information about your professional profile in the intuitive form.</p>
+                    </div>
+                    <div class="p-6 rounded-lg bg-gray-50 shadow-md flex flex-col items-center">
+                        <i class="fas fa-brain text-5xl text-purple-500 mb-4"></i>
+                        <h3 class="font-bold text-xl mb-2 text-gray-800">2. AI Processing</h3>
+                        <p class="text-gray-600 text-base">Our trained Random Forest model processes your data, applying complex learned patterns.</p>
+                    </div>
+                    <div class="p-6 rounded-lg bg-gray-50 shadow-md flex flex-col items-center">
+                        <i class="fas fa-chart-line text-5xl text-pink-500 mb-4"></i>
+                        <h3 class="font-bold text-xl mb-2 text-gray-800">3. Get Instant Prediction</h3>
+                        <p class="text-gray-600 text-base">Receive an instant, data-driven salary estimate based on your provided inputs.</p>
+                    </div>
+                </div>
             </div>
+        </section>
+    </main>
 
-            <div>
-                <label for="job_title" class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                <input type="text" id="job_title" name="Job_Title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value="Software Engineer">
-            </div>
-
-            <div>
-                <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
-                <input type="number" id="age" name="Age" required min="18" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value="30">
-            </div>
-
-            <div>
-                <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                <select id="gender" name="Gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
-            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Predict Salary
-            </button>
-        </form>
-
-        <div id="predictionResult" class="mt-8 p-4 bg-indigo-50 rounded-lg text-center text-lg font-semibold text-indigo-800 hidden">
-            <!-- Prediction result will be displayed here -->
-        </div>
-
-        <div id="errorMessage" class="mt-4 p-3 bg-red-100 rounded-lg text-center text-red-700 hidden">
-            <!-- Error messages will be displayed here -->
-        </div>
-    </div>
+    <!-- Footer -->
+    <footer class="w-full py-6 text-center text-white text-sm bg-gray-900 bg-opacity-70 mt-auto">
+        <p>&copy; 2024 Salary AI. All rights reserved.</p>
+    </footer>
 
     <script>
         document.getElementById('predictionForm').addEventListener('submit', async function(event) {
@@ -101,10 +261,19 @@
 
             const resultDiv = document.getElementById('predictionResult');
             const errorDiv = document.getElementById('errorMessage');
-            resultDiv.classList.add('hidden'); // Hide previous results
-            errorDiv.classList.add('hidden'); // Hide previous errors
-            resultDiv.innerHTML = ''; // Clear previous results
-            errorDiv.innerHTML = ''; // Clear previous errors
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Reset UI
+            resultDiv.classList.add('hidden', 'scale-0');
+            resultDiv.classList.remove('scale-100');
+            errorDiv.classList.add('hidden');
+            resultDiv.innerHTML = '';
+            errorDiv.innerHTML = '';
+            buttonText.textContent = 'Predicting...';
+            loadingSpinner.classList.remove('hidden');
+            loadingSpinner.classList.add('inline-block');
+            document.querySelector('button[type="submit"]').disabled = true; // Disable button during prediction
 
             const formData = {
                 Education: document.getElementById('education').value,
@@ -129,6 +298,10 @@
                 if (response.ok) {
                     resultDiv.innerHTML = `Predicted Salary: ₹${data.predicted_salary_inr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                     resultDiv.classList.remove('hidden');
+                    setTimeout(() => {
+                        resultDiv.classList.remove('scale-0');
+                        resultDiv.classList.add('scale-100');
+                    }, 50);
                 } else {
                     errorDiv.innerHTML = `Error: ${data.detail || 'Something went wrong.'}`;
                     errorDiv.classList.remove('hidden');
@@ -137,6 +310,11 @@
                 console.error('Fetch error:', error);
                 errorDiv.innerHTML = 'Network error or unable to connect to the server.';
                 errorDiv.classList.remove('hidden');
+            } finally {
+                buttonText.textContent = 'Predict Salary';
+                loadingSpinner.classList.add('hidden');
+                loadingSpinner.classList.remove('inline-block');
+                document.querySelector('button[type="submit"]').disabled = false; // Re-enable button
             }
         });
     </script>
